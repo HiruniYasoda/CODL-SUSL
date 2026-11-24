@@ -1,0 +1,38 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.docker.example
+
+# Database and Backup files
+*.sql
+*.sqlite
+*.sqlite-journal
+*.sqlite3
+*.dump
+*backup*.json
+backups/
+backend/database_backup.json
+backend/storage/app/backups/
+
+# Node / Frontend
+node_modules/
+dist/
+build/
+.npm/
+
+# Backend / Composer / Laravel
+backend/vendor/
+backend/storage/*.key
+backend/storage/logs/*.log
+backend/storage/framework/cache/data/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.user

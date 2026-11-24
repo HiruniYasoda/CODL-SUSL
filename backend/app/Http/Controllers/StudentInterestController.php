@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\AI\Models\StudentInterest;
+use App\AI\Models\IndustryRequirement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -56,7 +57,7 @@ class StudentInterestController extends Controller
             }
 
             try {
-                $verifyResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                $verifyResponse = Http::asForm()->timeout(5)->post('https://www.google.com/recaptcha/api/siteverify', [
                     'secret' => $recaptchaSecret,
                     'response' => $token,
                     'remoteip' => $request->ip(),
@@ -74,16 +75,47 @@ class StudentInterestController extends Controller
                 }
             } catch (\Exception $verifyException) {
                 Log::error('reCAPTCHA verification error: ' . $verifyException->getMessage());
-
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anti-bot verification service unavailable. Please try again later.'
+                ], 503);
             }
         }
 
         try {
-
             $validated['survey_submitted_at'] = now();
-
-
             unset($validated['recaptcha_token']);
+
+            // Explicit persistence to analytics database
+            StudentInterest::create([
+                'survey_submitted_at' => $validated['survey_submitted_at'],
+                'email' => $validated['email'] ?? null,
+                'whatsapp' => $validated['whatsapp_no'] ?? null,
+                'education_level' => $validated['education_level'],
+                'province' => $validated['province'],
+                'district' => $validated['district'],
+                'primary_interest' => $validated['primary_field'],
+                'primary_skills' => $validated['primary_skills'],
+                'primary_teaching_methods' => $validated['primary_teaching_methods'],
+                'primary_theory_practical' => $validated['primary_theory_practical'],
+                'primary_learning_methods' => $validated['primary_teaching_methods'],
+                'primary_learning_balance' => (string)$validated['primary_theory_practical'],
+                'secondary_interest' => $validated['secondary_field'] ?? null,
+                'secondary_skills' => $validated['secondary_skills'] ?? null,
+                'secondary_teaching_methods' => $validated['secondary_teaching_methods'] ?? null,
+                'secondary_theory_practical' => $validated['secondary_theory_practical'] ?? null,
+                'secondary_learning_methods' => $validated['secondary_teaching_methods'] ?? null,
+                'secondary_learning_balance' => isset($validated['secondary_theory_practical']) ? (string)$validated['secondary_theory_practical'] : null,
+                'ternary_interest' => $validated['third_field'] ?? null,
+                'third_skills' => $validated['third_skills'] ?? null,
+                'third_teaching_methods' => $validated['third_teaching_methods'] ?? null,
+                'third_theory_practical' => $validated['third_theory_practical'] ?? null,
+                'ternary_skills' => $validated['third_skills'] ?? null,
+                'ternary_learning_methods' => $validated['third_teaching_methods'] ?? null,
+                'ternary_learning_balance' => isset($validated['third_theory_practical']) ? (string)$validated['third_theory_practical'] : null,
+                'university_opportunities' => $validated['university_opportunities'] ?? null,
+                'new_program_suggestion' => $validated['new_program_suggestion'] ?? null,
+            ]);
 
 
             $webhookUrl = config('services.google_sheets.student_webhook_url') ?: config('services.google_sheets.webhook_url');
@@ -377,7 +409,7 @@ class StudentInterestController extends Controller
             }
 
             try {
-                $verifyResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                $verifyResponse = Http::asForm()->timeout(5)->post('https://www.google.com/recaptcha/api/siteverify', [
                     'secret' => $recaptchaSecret,
                     'response' => $token,
                     'remoteip' => $request->ip(),
@@ -395,12 +427,36 @@ class StudentInterestController extends Controller
                 }
             } catch (\Exception $verifyException) {
                 Log::error('reCAPTCHA verification error for industry: ' . $verifyException->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anti-bot verification service unavailable. Please try again later.'
+                ], 503);
             }
         }
 
         try {
             $validated['survey_submitted_at'] = now();
             unset($validated['recaptcha_token']);
+
+            // Explicit persistence to analytics database
+            IndustryRequirement::create([
+                'survey_submitted_at' => $validated['survey_submitted_at'],
+                'company_name' => $validated['company_name'] ?? null,
+                'industry_sector' => $validated['industry_sector'] ?? null,
+                'organization_size' => $validated['organization_size'] ?? null,
+                'primary_academic_field' => $validated['primary_academic_field'] ?? null,
+                'secondary_academic_field' => $validated['secondary_academic_field'] ?? null,
+                'third_academic_field' => $validated['third_academic_field'] ?? null,
+                'required_skills' => $validated['required_skills'] ?? null,
+                'academic_practices' => $validated['academic_practices'] ?? null,
+                'minimum_qualification' => $validated['minimum_qualification'] ?? null,
+                'minimum_degree_result' => $validated['minimum_degree_result'] ?? null,
+                'certification_importance' => $validated['certification_importance'] ?? null,
+                'emerging_fields' => $validated['emerging_fields'] ?? null,
+                'new_program_suggestion' => $validated['new_program_suggestion'] ?? null,
+                'graduate_skill_gaps' => $validated['graduate_skill_gaps'] ?? null,
+                'additional_recommendations' => $validated['additional_recommendations'] ?? null,
+            ]);
 
 
             $webhookUrl = config('services.google_sheets.industry_webhook_url') ?: config('services.google_sheets.webhook_url');

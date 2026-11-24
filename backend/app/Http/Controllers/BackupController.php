@@ -203,14 +203,16 @@ class BackupController extends Controller
                 'settings' => $settings,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Database backup failed: ' . $e->getMessage());
+            \Log::error('Database backup failed: ' . $e->getMessage(), [
+                'exception' => $e
+            ]);
             
             $settings->update([
                 'last_backup_status' => 'failed',
             ]);
 
             return response()->json([
-                'message' => 'Database backup failed: ' . $e->getMessage(),
+                'message' => 'Database backup failed. Please check the system logs for details.',
                 'settings' => $settings,
             ], 500);
         }

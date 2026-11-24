@@ -1,59 +1,65 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CODL Backend: Architecture & API Foundation
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The backend for CODL-SUSL is powered by **Laravel 11**, designed with clean separation of concerns, enterprise role-based authorization, modular routing, and a decoupled dual-database architecture.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Directory Structure
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```
+backend/
+├── app/
+│   ├── AI/                   # Machine learning & NLP curriculum gap analysis
+│   │   ├── Controllers/      # Analytics dashboard endpoints
+│   │   └── Models/           # Analytics entities (StudentInterest, IndustryRequirement, etc.)
+│   ├── Http/
+│   │   ├── Controllers/      # Thin HTTP controllers (request parsing & response dispatching)
+│   │   ├── Middleware/       # RoleMiddleware, ThrottleMiddleware, Sanctum guards
+│   │   └── Requests/         # Form request validation rules
+│   ├── Jobs/                 # Asynchronous background tasks (NLP pipeline rebuilding)
+│   ├── Models/               # Operational domain entities (Course, User, Batch, Exam, etc.)
+│   └── Services/             # Business domain logic (CourseService, etc.)
+├── database/
+│   ├── migrations/           # Multi-database schema migration files
+│   └── seeders/              # Database population scripts
+├── routes/
+│   ├── api/                  # Domain-partitioned modular route definitions
+│   │   ├── admin.php         # Administration, system settings & backup controls
+│   │   ├── analytics.php     # AI & NLP program analytics endpoints
+│   │   ├── auth.php          # Authentication & profile management
+│   │   ├── courses.php       # Courses, categories, batches, applications
+│   │   ├── exams.php         # Examination lifecycles, timetables, results
+│   │   └── surveys.php       # Public student & industry surveys
+│   └── api.php               # Master route registry
+└── tests/
+    └── Feature/              # Comprehensive automated feature tests
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Core Technical Features
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### 1. Decoupled Service Architecture
+To avoid bloated controllers, domain operations are encapsulated within specialized services:
+- **`App\Services\CourseService`**: Coordinates course creation, nested semester/subject synchronizations, student enrollments, activity logging, and versioned cache bust operations.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 2. Dual Database Connections
+Configured in `config/database.php`:
+- **`mysql` (Default)**: Handles user authentication, courses, batches, exams, results, and administrative workflows.
+- **`analytics`**: Houses high-volume survey submissions, skill interest catalogs, and computed coverage metrics.
 
-## Laravel Sponsors
+### 3. Fail-Closed reCAPTCHA Verification
+All public survey endpoints (`/api/student-interests`, `/api/industry-analysis`) employ anti-bot verification that strictly denies requests if validation fails or if the upstream verification service times out.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 4. Protected Table Inspector
+The administrative table explorer (`DatabaseTableController`) enforces an explicit `ALLOWED_TABLES` allowlist (`categories`, `announcements`, `survey_interests_config`, etc.), actively rejecting access to security-critical tables such as `users`, `personal_access_tokens`, or `system_settings`.
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Running Backend Tests
 
-## Contributing
+```bash
+php artisan test
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Tests run in-memory using SQLite (`:memory:`) as configured in `phpunit.xml`.
